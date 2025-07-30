@@ -1,6 +1,6 @@
 #include <iostream>
-#include <ctime>
 #include <cstdlib>
+#include <ctime>
 
 using namespace std;
 
@@ -9,9 +9,11 @@ const int COLUMNAS = 5;
 const int MINAS = 5;
 
 void inicializarTablero(char tablero[FILAS][COLUMNAS], char valor) {
-    for (int i = 0; i < FILAS; i++)
-        for (int j = 0; j < COLUMNAS; j++)
+    for (int i = 0; i < FILAS; i++) {
+        for (int j = 0; j < COLUMNAS; j++) {
             tablero[i][j] = valor;
+        }
+    }
 }
 
 void colocarMinas(char tablero[FILAS][COLUMNAS]) {
@@ -26,73 +28,94 @@ void colocarMinas(char tablero[FILAS][COLUMNAS]) {
     }
 }
 
-int contarMinasCerca(char minas[FILAS][COLUMNAS], int x, int y) {
-    int cuenta = 0;
-    for (int i = x - 1; i <= x + 1; i++) {
-        for (int j = y - 1; j <= y + 1; j++) {
-            if (i >= 0 && i < FILAS && j >= 0 && j < COLUMNAS) {
-                if (minas[i][j] == '*' && !(i == x && j == y))
-                    cuenta++;
+int contarMinasCercanas(char tablero[FILAS][COLUMNAS], int fila, int columna) {
+    int contador = 0;
+    for (int i = -1; i <= 1; i++) {
+        for (int j = -1; j <= 1; j++) {
+            int nuevaFila = fila + i;
+            int nuevaColumna = columna + j;
+            if (nuevaFila >= 0 && nuevaFila < FILAS && nuevaColumna >= 0 && nuevaColumna < COLUMNAS) {
+                if (tablero[nuevaFila][nuevaColumna] == '*') {
+                    contador++;
+                }
             }
         }
     }
-    return cuenta;
+    return contador;
 }
 
 void mostrarTablero(char tablero[FILAS][COLUMNAS]) {
-    cout << "   ";
-    for (int i = 0; i < COLUMNAS; i++)
-        cout << i << " ";
-    cout << endl;
     for (int i = 0; i < FILAS; i++) {
-        cout << i << " |";
-        for (int j = 0; j < COLUMNAS; j++)
-            cout << tablero[i][j] << "|";
+        for (int j = 0; j < COLUMNAS; j++) {
+            cout << tablero[i][j] << " ";
+        }
         cout << endl;
     }
 }
 
+bool esEntradaValida(int valor, int limite) {
+    if (valor < 0 || valor >= limite) {
+        return false;
+    }
+    return true;
+}
+
 int main() {
-    srand(time(0));
     char tablero[FILAS][COLUMNAS];
-    char minas[FILAS][COLUMNAS];
-    bool juego = true;
-    int descubiertas = 0;
-    int totalCasillas = FILAS * COLUMNAS - MINAS;
+    char tableroVisible[FILAS][COLUMNAS];
+    int fila, columna;
 
-    inicializarTablero(tablero, '-');
-    inicializarTablero(minas, '-');
-    colocarMinas(minas);
+    srand(time(NULL));
 
-    while (juego) {
-        mostrarTablero(tablero);
-        int x, y;
-        cout << "Introduce fila y columna (ejemplo: 1 2): ";
-        cin >> x >> y;
+    inicializarTablero(tablero, '0');
+    inicializarTablero(tableroVisible, '#');
+    colocarMinas(tablero);
 
-        if (x < 0 || x >= FILAS || y < 0 || y >= COLUMNAS) {
-            cout << "Posicion fuera de rango. Intenta de nuevo.\n";
-            continue;
-        }
-        if (tablero[x][y] != '-') {
-            cout << "Ya descubriste esa casilla.\n";
-            continue;
-        }
-        if (minas[x][y] == '*') {
-            cout << "GAME OVER! Pisaste una mina.\n";
-            mostrarTablero(minas);
-            juego = false;
-            break;
-        } else {
-            int minasCerca = contarMinasCerca(minas, x, y);
-            tablero[x][y] = minasCerca + '0';
-            descubiertas++;
-            if (descubiertas == totalCasillas) {
-                cout << "¡Felicidades! Descubriste todas las casillas sin pisar minas.\n";
-                mostrarTablero(minas);
-                break;
+    for (int i = 0; i < FILAS; i++) {
+        for (int j = 0; j < COLUMNAS; j++) {
+            if (tablero[i][j] != '*') {
+                tablero[i][j] = '0' + contarMinasCercanas(tablero, i, j);
             }
         }
     }
+
+    cout << "Bienvenido al buscaminas!" << endl;
+    cout << "Descubre las casillas sin explotar." << endl;
+
+    while (true) {
+        mostrarTablero(tableroVisible);
+        cout << "Introduce la fila y columna (0-" << FILAS - 1 << "): ";
+        cin >> fila >> columna;
+
+        // Validar entrada del usuario
+        if (!esEntradaValida(fila, FILAS) || !esEntradaValida(columna, COLUMNAS)) {
+            cout << "Posicion invalida. Intenta nuevamente." << endl;
+            continue;
+        }
+
+        if (tablero[fila][columna] == '*') {
+            cout << "Boom! Pisaste una mina. Fin del juego." << endl;
+            mostrarTablero(tablero);
+            break;
+        } else {
+            tableroVisible[fila][columna] = tablero[fila][columna];
+        }
+
+        int descubiertas = 0;
+        for (int i = 0; i < FILAS; i++) {
+            for (int j = 0; j < COLUMNAS; j++) {
+                if (tableroVisible[i][j] != '#' && tablero[i][j] != '*') {
+                    descubiertas++;
+                }
+            }
+        }
+
+        if (descubiertas == FILAS * COLUMNAS - MINAS) {
+            cout << "Ganastes! Descubriste todas las casillas sin minas." << endl;
+            mostrarTablero(tablero);
+            break;
+        }
+    }
+
     return 0;
 }
